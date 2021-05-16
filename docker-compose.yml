@@ -1,0 +1,14 @@
+version: "3.5"
+
+services:
+  app:
+    build:
+      context: .
+      target: builder
+    volumes:
+      - .:/app
+    environment:
+      - API_VERSION=development
+      - PORT=7777
+    ports:
+      - 7777:7777
