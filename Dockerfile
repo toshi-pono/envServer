@@ -8,13 +8,15 @@ COPY go.mod .
 COPY go.sum .
 
 RUN go mod download
-COPY . .
+COPY static static
+COPY main.go .
 
-RUN GOOS=linux GOARCH=amd64 go build -o /main
+RUN GOOS=linux GOARCH=amd64 go build -o main
 
 FROM alpine:3.13.5
-
-COPY --from=builder /main .
+WORKDIR /app
+COPY --from=builder /app/main .
+COPY --from=builder /app/static static
 
 ENV PORT=${PORT}
-ENTRYPOINT ["/main"]
+ENTRYPOINT ["/app/main"]

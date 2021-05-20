@@ -15,13 +15,12 @@ services:
     build:
       context: .
       target: builder
-    volumes:
-      - .:/app
     env_file: .env
     environment:
       - API_VERSION=development
-      - CLEARDB_DATABASE_URL=postgres://root:password@appdb:5432/sora?sslmode=disable
     ports:
       - 7777:7777
+    entrypoint: 
+      - /app/main 
     depends_on:
       - db
