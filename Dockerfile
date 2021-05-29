@@ -1,7 +1,8 @@
 FROM golang:alpine as builder
 
 RUN apk update \
-  && apk add --no-cache git curl
+  && apk add --no-cache git curl \
+  && go install github.com/cosmtrek/air@latest
 
 WORKDIR /app
 COPY go.mod .

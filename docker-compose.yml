@@ -20,7 +20,12 @@ services:
       - API_VERSION=development
     ports:
       - 7777:7777
-    entrypoint: 
-      - /app/main 
+    volumes: 
+      - .:/app
+    command: "air"
+    security_opt:
+      - apparmor:unconfined
+    cap_add:
+      - SYS_PTRACE
     depends_on:
       - db

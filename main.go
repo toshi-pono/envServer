@@ -37,6 +37,7 @@ var (
 )
 
 func main() {
+	fmt.Println("hello")
 	_db, err := sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
@@ -55,9 +56,7 @@ func main() {
 	e.POST("/api/data/postDatas", HandleAPIPostDatas)
 
 	// プロセスを起動
-	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
-		log.Fatal(err)
-	}
+	e.Start(":" + os.Getenv("PORT"))
 }
 
 func HandleAPIPostDatas(c echo.Context) error {
