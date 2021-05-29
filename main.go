@@ -15,6 +15,11 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type PostData struct {
+	SecretKey string  `json:"secretkey"`
+	EnvData   EnvData `json:"envData"`
+}
+
 type EnvData struct {
 	Id          int       `json:"id,omitempty" db:"id"`
 	Temperature float64   `json:"temperature" db:"temperature"`
@@ -73,10 +78,14 @@ func getLatestDataHandler(c echo.Context) error {
 }
 
 func postDataHandler(c echo.Context) error {
-	req := new(EnvData)
-	if err := c.Bind(req); err != nil {
+	data := new(PostData)
+	if err := c.Bind(data); err != nil {
 		return err
 	}
+	if data.SecretKey != os.Getenv("POST_DATA_KEY") {
+		return c.String(http.StatusForbidden, "Forbidden")
+	}
+	req := data.EnvData
 	// データベースに追加する
 	fmt.Println(req)
 	_, err := db.Exec("INSERT INTO weather (temperature, humidity, pressure, battery, created_at) VALUES ($1, $2, $3, $4, $5)", req.Temperature, req.Humidity, req.Pressure, req.Battery, req.CreatedAt)
