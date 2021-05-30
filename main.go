@@ -133,8 +133,9 @@ func linebotHandler(c echo.Context) error {
 }
 
 const helpMessage = `使い方
-使い方の説明を書きます！！！（未完）
-`
+temp: 最新の温度・湿度・気圧情報を取得します
+dbstatus: データベースのレコード数を取得します
+m5status: 観測機器のバッテリー情報を取得します`
 
 func getReplyMessage(event *linebot.Event) string {
 	switch message := event.Message.(type) {
@@ -155,11 +156,14 @@ func createReplyText(message string) string {
 	if strings.Contains(message, "help") || strings.Contains(message, "使い方") {
 		return helpMessage
 	}
-	if strings.Contains(message, "気温") {
+	if strings.Contains(message, "temp") {
 		return latestRoomDataMessage()
 	}
-	if strings.Contains(message, "データベース情報") {
+	if strings.Contains(message, "dbstatus") {
 		return dbStatusMessage()
+	}
+	if strings.Contains(message, "m5status") {
+		return m5StatusMessage()
 	}
 	return createRandomReply()
 }
@@ -190,6 +194,26 @@ func dbStatusMessage() string {
 		return fmt.Sprintf("db error: %v", err)
 	}
 	return fmt.Sprintf("weather: %d 件", count)
+}
+
+func m5StatusMessage() string {
+	envData := EnvData{}
+	err := db.Get(&envData, "SELECT * FROM weather ORDER BY created_at DESC LIMIT 1")
+	if err == sql.ErrNoRows {
+		return "データがありません"
+	} else if err != nil {
+		return fmt.Sprintf("db error: %v", err)
+	}
+
+	m5stickCStatus := "受信に問題があります"
+	if envData.CreatedAt.After(time.Now().Add(-2 * time.Minute)) {
+		m5stickCStatus = "正常稼働中"
+	} else if envData.CreatedAt.After(time.Now().Add(-5 * time.Minute)) {
+		m5stickCStatus = "データ受信不安定"
+	}
+
+	const format1 = "2006/01/02 15:04:05"
+	return fmt.Sprintf("%s\n取得時刻: %s\nバッテリー残量: %.2f", m5stickCStatus, envData.CreatedAt.Format(format1), envData.Battery)
 }
 
 func getLatestDataHandler(c echo.Context) error {
