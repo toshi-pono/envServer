@@ -44,7 +44,8 @@ const drawChart = async () => {
       x: {
         type: "timeseries",
         tick: {
-          format: "%Y-%m-%d %H:%M:%S",
+          fit: false,
+          format: "%H:%M:%S",
           rotate: -90,
         },
       },
