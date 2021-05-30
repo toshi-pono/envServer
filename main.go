@@ -154,7 +154,7 @@ func createReplyText(message string) string {
 	if strings.Contains(message, "help") || strings.Contains(message, "使い方") {
 		return helpMessage
 	}
-	if strings.Contains(message, "温度") {
+	if strings.Contains(message, "気温") {
 		return latestRoomDataMessage()
 	}
 	return createRandomReply()
