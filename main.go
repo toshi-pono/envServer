@@ -158,6 +158,9 @@ func createReplyText(message string) string {
 	if strings.Contains(message, "気温") {
 		return latestRoomDataMessage()
 	}
+	if strings.Contains(message, "データベース情報") {
+		return dbStatusMessage()
+	}
 	return createRandomReply()
 }
 
@@ -175,7 +178,18 @@ func latestRoomDataMessage() string {
 	} else if err != nil {
 		return fmt.Sprintf("db error: %v", err)
 	}
-	return fmt.Sprintf("取得時刻: %s\n気温: %f度\n湿度: %f%%\n大気圧: %f hPa", envData.CreatedAt.String(), envData.Temperature, envData.Humidity, envData.Pressure/100)
+
+	const format1 = "2006/01/02 15:04:05"
+	return fmt.Sprintf("取得時刻: %s\n気温: %.1f度\n湿度: %.1f%%\n大気圧: %.1f hPa", envData.CreatedAt.Format(format1), envData.Temperature, envData.Humidity, envData.Pressure/100)
+}
+
+func dbStatusMessage() string {
+	var count int
+	err := db.Get(&count, "SELECT count(*) FROM weather")
+	if err != nil {
+		return fmt.Sprintf("db error: %v", err)
+	}
+	return fmt.Sprintf("weather: %d 件", count)
 }
 
 func getLatestDataHandler(c echo.Context) error {
@@ -198,7 +212,9 @@ func postDataHandler(c echo.Context) error {
 		return c.String(http.StatusForbidden, "Forbidden")
 	}
 	if data.TimeSetting == 1 {
-		data.EnvData.CreatedAt = time.Now()
+		t := time.Now().UTC()
+		jst := time.FixedZone("JST", +9*60*60)
+		data.EnvData.CreatedAt = t.In(jst)
 	}
 	req := data.EnvData
 	// データベースに追加する
