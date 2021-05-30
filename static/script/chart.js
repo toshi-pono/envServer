@@ -15,14 +15,15 @@ const drawChart = async () => {
     humidity.push(datas[i].humidity);
 
     const d = new Date(datas[i].created_at);
-    const formattedTime = `${d.getFullYear()}-${d
-      .getMonth()
+    // HACK:データベースにJSTをUTCとして入れてしまっている
+    const formattedTime = `${d.getUTCFullYear()}-${d
+      .getUTCMonth()
       .toString()
-      .padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")} ${d
-      .getHours()
+      .padStart(2, "0")}-${d.getUTCDate().toString().padStart(2, "0")} ${d
+      .getUTCHours()
       .toString()
-      .padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d
-      .getSeconds()
+      .padStart(2, "0")}:${d.getUTCMinutes().toString().padStart(2, "0")}:${d
+      .getUTCSeconds()
       .toString()
       .padStart(2, "0")}`;
 
@@ -50,6 +51,9 @@ const drawChart = async () => {
       y2: {
         show: true,
       },
+    },
+    point: {
+      show: false,
     },
   });
 };
