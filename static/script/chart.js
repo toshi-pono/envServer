@@ -14,51 +14,48 @@ const drawChart = async () => {
   let humidity = ["humidity"];
   let pressure = ["pressure"];
 
-  let cnt = 0;
-  let before = datas[0];
-  let humiditySum = 0;
-  let temperatureSum = 0;
-  let pressureSum = 0;
-  let minutesSum = 0;
-  // 10分間の平均を出力
+  let alp = 0.8;
+
+  let tempC = datas[0].temperature;
+  let humC = datas[0].humidity;
+  let presC = datas[0].pressure;
+  let beforeDate = new Date(datas[0].created_at);
+  // ローパスフィルターを通して出力
   for (let i = 0; i < datas.length; i++) {
-    temperatureSum += datas[i].temperature;
-    humiditySum += datas[i].humidity;
-    pressureSum += datas[i].pressure;
-    minutesSum += new Date(datas[i].created_at).getUTCMinutes();
-    cnt++;
-    if (
-      !isTimeNear(datas[i].created_at, before.created_at) ||
-      datas.length < 10
-    ) {
-      // 平均を追加
-      temperature.push(temperatureSum / cnt);
-      humidity.push(humiditySum / cnt);
-      pressure.push(pressureSum / cnt);
-
-      // 時刻の処理
-      const d = new Date(datas[i].created_at);
-      // HACK:データベースにJSTをUTCとして入れてしまっている
-      const formattedTime = `${d.getUTCFullYear()}-${d
-        .getUTCMonth()
-        .toString()
-        .padStart(2, "0")}-${d.getUTCDate().toString().padStart(2, "0")} ${d
-        .getUTCHours()
-        .toString()
-        .padStart(2, "0")}:${Math.round(minutesSum / cnt)
-        .toString()
-        .padStart(2, "0")}:${d.getUTCSeconds().toString().padStart(2, "0")}`;
-      timeStamp.push(formattedTime);
-
-      // 変数初期化
-      humiditySum = 0;
-      temperatureSum = 0;
-      pressureSum = 0;
-      minutesSum = 0;
-      cnt = 0;
+    let nowDate = new Date(datas[i].created_at);
+    // 前回計測が差3分以内だったらローパスフィルターを通す
+    if (nowDate.getTime() - beforeDate.getTime() < 1000 * 60 * 3) {
+      tempC = tempC * alp + datas[i].temperature * (1 - alp);
+      humC = humC * alp + datas[i].humidity * (1 - alp);
+      presC = presC * alp + datas[i].pressure * (1 - alp);
+    } else {
+      tempC = datas[i].temperature;
+      humC = datas[i].humidity;
+      presC = datas[i].pressure;
     }
 
-    before = datas[i];
+    const formattedTime = `${nowDate.getUTCFullYear()}-${nowDate
+      .getUTCMonth()
+      .toString()
+      .padStart(2, "0")}-${nowDate
+      .getUTCDate()
+      .toString()
+      .padStart(2, "0")} ${nowDate
+      .getUTCHours()
+      .toString()
+      .padStart(2, "0")}:${nowDate
+      .getUTCMinutes()
+      .toString()
+      .padStart(2, "0")}:${nowDate
+      .getUTCSeconds()
+      .toString()
+      .padStart(2, "0")}`;
+
+    temperature.push(tempC.toFixed(2));
+    humidity.push(humC.toFixed(2));
+    pressure.push(presC.toFixed(2));
+    timeStamp.push(formattedTime);
+    beforeDate = nowDate;
   }
   columns.push(timeStamp, temperature, humidity);
   columns2.push(timeStamp, pressure);
