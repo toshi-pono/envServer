@@ -85,6 +85,7 @@ func main() {
 
 	// DATA
 	e.GET("/data/latest", getLatestDataHandler)
+	e.GET("/data/oneday", get24hourDataHandler)
 	e.POST("/data/postData", postDataHandler)
 
 	// LINEbot
@@ -248,4 +249,13 @@ func postDataHandler(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("db error: %v", err))
 	}
 	return c.String(http.StatusOK, "OK")
+}
+
+func get24hourDataHandler(c echo.Context) error {
+	envDatas := []EnvData{}
+	err := db.Select(&envDatas, "SELECT * FROM weather WHERE created_at > ?", time.Now().Add(-24*time.Hour))
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("db error: %v", err))
+	}
+	return c.JSON(http.StatusOK, envDatas)
 }
