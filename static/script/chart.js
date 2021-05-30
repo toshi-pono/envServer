@@ -7,12 +7,15 @@ const drawChart = async () => {
   const response = await fetch("/data/oneday");
   const datas = await response.json();
   let columns = [];
+  let columns2 = [];
   let timeStamp = ["x"];
   let temperature = ["temperature"];
   let humidity = ["humidity"];
+  let pressure = ["pressure"];
   for (let i = 0; i < datas.length; i++) {
     temperature.push(datas[i].temperature);
     humidity.push(datas[i].humidity);
+    pressure.push(datas[i].pressure);
 
     const d = new Date(datas[i].created_at);
     // HACK:データベースにJSTをUTCとして入れてしまっている
@@ -30,8 +33,10 @@ const drawChart = async () => {
     timeStamp.push(formattedTime);
   }
   columns.push(timeStamp, temperature, humidity);
+  columns2.push(timeStamp, pressure);
 
   let chart = c3.generate({
+    bindto: "#chart",
     data: {
       x: "x",
       xFormat: "%Y-%m-%d %H:%M:%S",
@@ -45,12 +50,32 @@ const drawChart = async () => {
         type: "timeseries",
         tick: {
           fit: false,
-          format: "%H:%M:%S",
-          rotate: -90,
+          format: "%H:%M",
         },
       },
       y2: {
         show: true,
+      },
+    },
+    point: {
+      show: false,
+    },
+  });
+
+  let chart2 = c3.generate({
+    bindto: "#chart2",
+    data: {
+      x: "x",
+      xFormat: "%Y-%m-%d %H:%M:%S",
+      columns: columns2,
+    },
+    axis: {
+      x: {
+        type: "timeseries",
+        tick: {
+          fit: false,
+          format: "%H:%M",
+        },
       },
     },
     point: {
