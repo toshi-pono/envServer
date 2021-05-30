@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -138,7 +139,7 @@ func getReplyMessage(event *linebot.Event) string {
 	switch message := event.Message.(type) {
 	// テキストメッセージ
 	case *linebot.TextMessage:
-		return message.Text
+		return createReplyText(message.Text)
 	// スタンプ
 	case *linebot.StickerMessage:
 		return fmt.Sprintf("sticker id is %v, stickerResourceType is %v", message.StickerID, message.StickerResourceType)
@@ -146,6 +147,34 @@ func getReplyMessage(event *linebot.Event) string {
 	default:
 		return helpMessage
 	}
+}
+
+// テキストメッセージを分析して返信を作成する
+func createReplyText(message string) string {
+	if strings.Contains(message, "help") || strings.Contains(message, "使い方") {
+		return helpMessage
+	}
+	if strings.Contains(message, "温度") {
+		return latestRoomDataMessage()
+	}
+	return createRandomReply()
+}
+
+// ランダムな返信を返す
+func createRandomReply() string {
+	// TODO:  ランダムな返答を作成する
+	return helpMessage
+}
+
+func latestRoomDataMessage() string {
+	envData := EnvData{}
+	err := db.Get(&envData, "SELECT * FROM weather ORDER BY created_at DESC LIMIT 1")
+	if err == sql.ErrNoRows {
+		return "データがありません"
+	} else if err != nil {
+		return fmt.Sprintf("db error: %v", err)
+	}
+	return fmt.Sprintf("取得時刻: %s\n気温: %f度\n湿度: %f%%\n大気圧: %f hPa", envData.CreatedAt.String(), envData.Temperature, envData.Humidity, envData.Pressure/100)
 }
 
 func getLatestDataHandler(c echo.Context) error {
