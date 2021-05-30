@@ -20,8 +20,9 @@ import (
 )
 
 type PostData struct {
-	SecretKey string  `json:"secretkey"`
-	EnvData   EnvData `json:"envData"`
+	SecretKey   string  `json:"secretkey"`
+	TimeSetting int     `json:"timeSetting"`
+	EnvData     EnvData `json:"envData"`
 }
 
 type EnvData struct {
@@ -195,6 +196,9 @@ func postDataHandler(c echo.Context) error {
 	}
 	if data.SecretKey != os.Getenv("POST_DATA_KEY") {
 		return c.String(http.StatusForbidden, "Forbidden")
+	}
+	if data.TimeSetting == 1 {
+		data.EnvData.CreatedAt = time.Now()
 	}
 	req := data.EnvData
 	// データベースに追加する
