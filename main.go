@@ -82,6 +82,8 @@ func main() {
 	e.GET("/", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "index", nil)
 	})
+	e.Static("/static/script", "static/script")
+	e.Static("/static/style", "static/style")
 
 	// DATA
 	e.GET("/data/latest", getLatestDataHandler)
@@ -214,7 +216,7 @@ func m5StatusMessage() string {
 	}
 
 	const format1 = "2006/01/02 15:04:05"
-	return fmt.Sprintf("%s\n取得時刻: %s\nバッテリー残量: %.2f", m5stickCStatus, envData.CreatedAt.Format(format1), envData.Battery)
+	return fmt.Sprintf("%s\n取得時刻: %s\nバッテリー残量: %.2fV", m5stickCStatus, envData.CreatedAt.Format(format1), envData.Battery)
 }
 
 func getLatestDataHandler(c echo.Context) error {
@@ -253,7 +255,7 @@ func postDataHandler(c echo.Context) error {
 
 func get24hourDataHandler(c echo.Context) error {
 	envDatas := []EnvData{}
-	err := db.Select(&envDatas, "SELECT * FROM weather WHERE created_at > ?", time.Now().Add(-24*time.Hour))
+	err := db.Select(&envDatas, "SELECT * FROM weather WHERE created_at > $1", time.Now().Add(-24*time.Hour))
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("db error: %v", err))
 	}
