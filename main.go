@@ -34,6 +34,13 @@ type EnvData struct {
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 }
 
+type Users struct {
+	Id       int    `db:"id"`
+	UserId   string `db:"userId"`
+	UserType int    `db:"userType"`
+	Reply    int    `db:"reply"`
+}
+
 // テンプレートのレンダラ―を作る
 type Renderer struct {
 	templates *template.Template
@@ -93,6 +100,7 @@ func main() {
 
 	// LINEbot
 	e.POST("/callback", linebotHandler)
+	e.POST("/pushTest", pushMessageTestHandler)
 
 	// プロセスを起動
 	e.Start(":" + os.Getenv("PORT"))
@@ -142,10 +150,11 @@ dbstatus: データベースのレコード数を取得します
 m5status: 観測機器のバッテリー情報を取得します`
 
 func getReplyMessage(event *linebot.Event) string {
+	userId := event.Source.UserID
 	switch message := event.Message.(type) {
 	// テキストメッセージ
 	case *linebot.TextMessage:
-		return createReplyText(message.Text)
+		return createReplyText(message.Text, userId)
 	// スタンプ
 	case *linebot.StickerMessage:
 		return fmt.Sprintf("sticker id is %v, stickerResourceType is %v", message.StickerID, message.StickerResourceType)
@@ -156,7 +165,14 @@ func getReplyMessage(event *linebot.Event) string {
 }
 
 // テキストメッセージを分析して返信を作成する
-func createReplyText(message string) string {
+func createReplyText(message string, userId string) string {
+	if strings.Contains(message, "pushApi") && strings.Contains(message, "on") {
+		// userDBにIdを追加する
+		if err := addUserId(userId); err != nil {
+			return fmt.Sprintf("db error: %v", err)
+		}
+		return "successfuly PushMessage setting ON"
+	}
 	if strings.Contains(message, "help") || strings.Contains(message, "使い方") {
 		return helpMessage
 	}
@@ -284,4 +300,40 @@ func deleteOldRecord() error {
 		log.Println("db delete old records")
 	}
 	return nil
+}
+
+func addUserId(userId string) error {
+	var count int
+	err := db.Get(&count, "SELECT COUNT(*) FROM users WHERE userId=$1", userId)
+	if err != nil {
+		return err
+	}
+	// すでに追加済みである場合
+	if count > 1 {
+		return nil
+	}
+	// TODO reply とuserTypeをきちんと考える
+	_, err = db.Exec("INSERT INTO users (userId, userType, reply) VALUES ($1, $2, $3)", userId, 1, 1)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func pushMessageTestHandler(c echo.Context) error {
+	var err error
+	users := []Users{}
+	err = db.Select(&users, "SELECT * FROM users WHERE userType=$1", 1)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("db error: %v", err))
+	}
+	userIds := make([]string, len(users))
+	for i, user := range users {
+		userIds[i] = user.UserId
+	}
+	_, err = bot.Multicast(userIds, linebot.NewTextMessage("こんにちは！")).Do()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("line bot: %v", err))
+	}
+	return c.NoContent(http.StatusOK)
 }
