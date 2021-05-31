@@ -36,8 +36,8 @@ type EnvData struct {
 
 type Users struct {
 	Id       int    `db:"id"`
-	UserId   string `db:"userId"`
-	UserType int    `db:"userType"`
+	UserId   string `db:"userid"`
+	UserType int    `db:"usertype"`
 	Reply    int    `db:"reply"`
 }
 
@@ -304,12 +304,12 @@ func deleteOldRecord() error {
 
 func addUserId(userId string) error {
 	var count int
-	err := db.Get(&count, "SELECT COUNT(*) FROM users WHERE userId=$1", userId)
+	err := db.Get(&count, "SELECT COUNT(*) FROM users WHERE userid=$1", userId)
 	if err != nil {
 		return err
 	}
 	// すでに追加済みである場合
-	if count > 1 {
+	if count > 0 {
 		return nil
 	}
 	// TODO reply とuserTypeをきちんと考える
@@ -323,7 +323,7 @@ func addUserId(userId string) error {
 func pushMessageTestHandler(c echo.Context) error {
 	var err error
 	users := []Users{}
-	err = db.Select(&users, "SELECT * FROM users WHERE userType=$1", 1)
+	err = db.Select(&users, "SELECT * FROM users WHERE usertype=$1", 1)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("db error: %v", err))
 	}
