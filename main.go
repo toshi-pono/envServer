@@ -45,6 +45,7 @@ func (r *Renderer) Render(w io.Writer, name string, data interface{}, c echo.Con
 
 const (
 	verifyToken = "00000000000000000000000000000000"
+	maxRecord   = 8000 // この値を超えたら古いレコードを削除する
 )
 
 var (
@@ -238,13 +239,18 @@ func postDataHandler(c echo.Context) error {
 	if data.SecretKey != os.Getenv("POST_DATA_KEY") {
 		return c.String(http.StatusForbidden, "Forbidden")
 	}
+	// レコード数が限界に近づいたら古いものを削除する
+	if err := deleteOldRecord(); err != nil {
+		log.Printf("db error in old record delete: %v", err)
+	}
+
+	// データベースに追加する
 	if data.TimeSetting == 1 {
 		t := time.Now().UTC()
 		jst := time.FixedZone("JST", +9*60*60)
 		data.EnvData.CreatedAt = t.In(jst)
 	}
 	req := data.EnvData
-	// データベースに追加する
 	fmt.Println(req)
 	_, err := db.Exec("INSERT INTO weather (temperature, humidity, pressure, battery, created_at) VALUES ($1, $2, $3, $4, $5)", req.Temperature, req.Humidity, req.Pressure, req.Battery, req.CreatedAt)
 	if err != nil {
@@ -260,4 +266,22 @@ func get24hourDataHandler(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("db error: %v", err))
 	}
 	return c.JSON(http.StatusOK, envDatas)
+}
+
+// heroku postgresの制限に近づいたら古いレコードを削除する
+func deleteOldRecord() error {
+	var count int
+	err := db.Get(&count, "SELECT count(*) FROM weather")
+	if err != nil {
+		return err
+	}
+	if count > maxRecord {
+		_, err = db.Exec("DELETE FROM weather WHERE created_at < $1", time.Now().AddDate(0, 0, -2))
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		log.Println("db delete old records")
+	}
+	return nil
 }
