@@ -58,10 +58,12 @@ const (
 var (
 	db  *sqlx.DB
 	bot *linebot.Client
+	jst *time.Location
 )
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+	jst = time.FixedZone("JST", +9*60*60)
 	_db, err := sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
@@ -263,7 +265,6 @@ func postDataHandler(c echo.Context) error {
 	// データベースに追加する
 	if data.TimeSetting == 1 {
 		t := time.Now().UTC()
-		jst := time.FixedZone("JST", +9*60*60)
 		data.EnvData.CreatedAt = t.In(jst)
 	}
 	req := data.EnvData
@@ -277,7 +278,7 @@ func postDataHandler(c echo.Context) error {
 
 func get24hourDataHandler(c echo.Context) error {
 	envDatas := []EnvData{}
-	err := db.Select(&envDatas, "SELECT * FROM weather WHERE created_at > $1", time.Now().Add(-24*time.Hour))
+	err := db.Select(&envDatas, "SELECT * FROM weather WHERE created_at > $1 ORDER BY created_at DESC", time.Now().UTC().In(jst).Add(-24*time.Hour))
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("db error: %v", err))
 	}
@@ -292,7 +293,7 @@ func deleteOldRecord() error {
 		return err
 	}
 	if count > maxRecord {
-		_, err = db.Exec("DELETE FROM weather WHERE created_at < $1", time.Now().AddDate(0, 0, -2))
+		_, err = db.Exec("DELETE FROM weather WHERE created_at < $1", time.Now().UTC().In(jst).AddDate(0, 0, -2))
 		if err != nil {
 			log.Println(err)
 			return err
