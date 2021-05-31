@@ -21,6 +21,7 @@ const drawChart = async () => {
   let presC = datas[0].pressure;
   let beforeDate = new Date(datas[0].created_at);
   // ローパスフィルターを通して出力
+  // TODO: 計測機器側で生データを処理したほうが良さそう
   for (let i = 0; i < datas.length; i++) {
     let nowDate = new Date(datas[i].created_at);
     // 前回計測が差3分以内だったらローパスフィルターを通す
