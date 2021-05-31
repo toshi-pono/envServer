@@ -278,7 +278,7 @@ func postDataHandler(c echo.Context) error {
 
 func get24hourDataHandler(c echo.Context) error {
 	envDatas := []EnvData{}
-	err := db.Select(&envDatas, "SELECT * FROM weather WHERE created_at > $1 ORDER BY created_at DESC", time.Now().UTC().In(jst).Add(-24*time.Hour))
+	err := db.Select(&envDatas, "SELECT * FROM weather WHERE created_at > $1 ORDER BY created_at ASC", time.Now().UTC().In(jst).Add(-24*time.Hour))
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("db error: %v", err))
 	}
