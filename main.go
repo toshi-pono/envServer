@@ -313,7 +313,7 @@ func addUserId(userId string) error {
 		return nil
 	}
 	// TODO reply とuserTypeをきちんと考える
-	_, err = db.Exec("INSERT INTO users (userId, userType, reply) VALUES ($1, $2, $3)", userId, 1, 1)
+	_, err = db.Exec("INSERT INTO users (userid, usertype, reply) VALUES ($1, $2, $3)", userId, 1, 1)
 	if err != nil {
 		return err
 	}
